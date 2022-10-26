@@ -1,4 +1,5 @@
 import { NextPage } from "next";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
 import { trpc } from "../../../utils/trpc";
@@ -17,6 +18,9 @@ const ViewDeck: NextPage = () => {
 
   return (
     <>
+      <Link href={`/decks/${deck.id}/edit`}>
+        <a>Edit Deck</a>
+      </Link>
       <h1 className="text-5xl text-center pt-16 pb-8">{deck.name}</h1>
       {deck.description && (
         <p className="text-center mb-3">{deck.description}</p>

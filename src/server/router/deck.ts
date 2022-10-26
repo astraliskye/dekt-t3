@@ -1,5 +1,6 @@
 import { createRouter } from "./context";
 import { string, z } from "zod";
+import CardList from "../../components/card-list";
 
 export const deckRouter = createRouter()
   .query("all", {
@@ -23,7 +24,10 @@ export const deckRouter = createRouter()
         where: { id: deckId },
         include: {
           cards: {
-            include: { statEffects: { include: { type: true } } },
+            include: {
+              statEffects: { include: { type: true } },
+              secondaryEffects: true,
+            },
           },
           tags: true,
           creator: {
@@ -86,8 +90,8 @@ export const deckRouter = createRouter()
       id: z.string(),
       name: z.string().optional(),
       description: z.string().optional(),
-      cards: z.object({ cardId: string() }).array().optional(),
-      tags: z.object({ tagId: z.string() }).array().optional(),
+      cards: z.string().array().optional(),
+      tags: z.string().array().optional(),
     }),
     async resolve({ ctx, input }) {
       return ctx.prisma.deck.update({
@@ -95,6 +99,14 @@ export const deckRouter = createRouter()
         data: {
           name: input.name,
           description: input.description,
+          cards: input.cards && {
+            set: [],
+            connect: input.cards.map((cardId) => ({ id: cardId })),
+          },
+          tags: input.tags && {
+            set: [],
+            connect: input.tags?.map((tagId) => ({ id: tagId })),
+          },
         },
         include: {
           cards: {
