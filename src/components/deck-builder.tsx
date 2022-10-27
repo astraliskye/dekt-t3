@@ -1,4 +1,3 @@
-import { triggerAsyncId } from "async_hooks";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
@@ -67,11 +66,11 @@ function cardMapFromArray(
   return result;
 }
 
-function tagMapFromArray(tagIds: string[]): Map<string, boolean> {
-  const result = new Map<string, boolean>();
+function tagMapFromArray(tagIds: string[]): Set<string> {
+  const result = new Set<string>();
 
   tagIds.forEach((tagId) => {
-    result.set(tagId, true);
+    result.add(tagId);
   });
 
   return result;
@@ -94,10 +93,8 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
   const [deckCards, setDeckCards] = useState<Map<string, CardWithEffects>>(
     deck ? cardMapFromArray(deck.cards) : new Map<string, CardWithEffects>()
   );
-  const [deckTags, setDeckTags] = useState<Map<string, boolean>>(
-    deck
-      ? tagMapFromArray(deck.tags.map((tag) => tag.id))
-      : new Map<string, boolean>()
+  const [deckTags, setDeckTags] = useState<Set<string>>(
+    deck ? tagMapFromArray(deck.tags.map((tag) => tag.id)) : new Set<string>()
   );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -110,10 +107,8 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
             id: deck.id,
             name: deckName,
             description: deckDescription,
-            cards: Array.from(deckCards.values()).map((card) => card.id),
-            tags: Array.from(deckTags.keys()).filter((tagId) =>
-              deckTags.get(tagId)
-            ),
+            cards: Array.from(deckCards.keys()),
+            tags: Array.from(deckTags.values()),
           });
 
           router.push(`/decks/${deck.id}`);
@@ -126,10 +121,8 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
             name: deckName,
             description: deckDescription,
             creator: session.user.id,
-            cards: Array.from(deckCards.values()).map((card) => card.id),
-            tags: Array.from(deckTags.keys()).filter((tagId) =>
-              deckTags.get(tagId)
-            ),
+            cards: Array.from(deckCards.keys()),
+            tags: Array.from(deckTags.values()),
           });
 
           router.push("/decks");
@@ -183,15 +176,19 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
             <button
               key={tag.id}
               className={`cursor-pointer ${
-                deckTags.get(tag.id)
+                deckTags.has(tag.id)
                   ? "bg-red-700 border border-transparent"
                   : "bg-transparent border border-red-700"
               } rounded-md mx-1 px-2 py-1 text-sm font-bold mb-3`}
-              onClick={() =>
-                setDeckTags(
-                  new Map(deckTags.set(tag.id, !deckTags.get(tag.id)))
-                )
-              }
+              onClick={() => {
+                if (deckTags.has(tag.id)) {
+                  deckTags.delete(tag.id);
+                  setDeckTags(new Set(deckTags));
+                } else {
+                  deckTags.add(tag.id);
+                  setDeckTags(new Set(deckTags));
+                }
+              }}
             >
               {tag.name}
             </button>
