@@ -2,6 +2,7 @@ import { NextPage } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
+import CardList from "../../../components/card-list";
 import { trpc } from "../../../utils/trpc";
 
 const ViewDeck: NextPage = () => {
@@ -45,16 +46,7 @@ const ViewDeck: NextPage = () => {
         </div>
       )}
 
-      <div className="flex flex-wrap justify-center">
-        {deck.cards.map((card) => (
-          <div
-            key={card.id}
-            className="bg-neutral-800 rounded-lg h-48 w-32 text-center m-2 p-2 select-none"
-          >
-            {card.name}
-          </div>
-        ))}
-      </div>
+      {deck.cards && <CardList cards={deck.cards} />}
     </>
   );
 };

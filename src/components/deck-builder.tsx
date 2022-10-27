@@ -1,7 +1,7 @@
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
-import { CardWithEffects, DeckWithCards } from "../types/client";
+import { CardWithEffects, DeckWithCards, Stat } from "../types/client";
 import { trpc } from "../utils/trpc";
 import Button from "./button";
 import CardCollection from "./card-collection";
@@ -10,12 +10,6 @@ import TextInput from "./text-input";
 
 interface DeckBuilderProps {
   deck?: DeckWithCards;
-}
-
-interface Stat {
-  name: string;
-  amount: number;
-  percent: boolean;
 }
 
 function getSecondaryEffectsFromCardMap(
@@ -201,35 +195,6 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
           cards={Array.from(deckCards.values())}
           removeCard={removeCardFromDeck}
         />
-      )}
-
-      {Array.from(getStatMapFromCardMap(deckCards).values()).length > 0 && (
-        <>
-          <h2 className="text-center text-3xl">Stat Effects</h2>
-          <ul className="">
-            {Array.from(getStatMapFromCardMap(deckCards).values()).map(
-              (stat) => {
-                return (
-                  <li key={stat.name} className="text-center text-neutral-200">
-                    {stat.name}: {stat.amount}
-                    {stat.percent ? "%" : ""}
-                  </li>
-                );
-              }
-            )}
-          </ul>
-        </>
-      )}
-
-      {getSecondaryEffectsFromCardMap(deckCards).length > 0 && (
-        <>
-          <h2 className="text-center text-3xl">Secondary Effects</h2>
-          <ul className="w-11/12 mx-auto list-disc">
-            {getSecondaryEffectsFromCardMap(deckCards).map((effect) => (
-              <li key={effect}>{effect}</li>
-            ))}
-          </ul>
-        </>
       )}
 
       <CardCollection deckCards={deckCards} addCardToDeck={addCardToDeck} />
