@@ -1,7 +1,7 @@
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
-import { CardWithEffects, DeckWithCards, Stat } from "../types/client";
+import { CardWithEffects, DeckWithCards } from "../types/client";
 import { trpc } from "../utils/trpc";
 import Button from "./button";
 import CardCollection from "./card-collection";
@@ -10,42 +10,6 @@ import TextInput from "./text-input";
 
 interface DeckBuilderProps {
   deck?: DeckWithCards;
-}
-
-function getSecondaryEffectsFromCardMap(
-  deckCards: Map<string, CardWithEffects>
-): string[] {
-  const secondaryEffects = new Set<string>();
-
-  Array.from(deckCards.values()).forEach((card) => {
-    card.secondaryEffects.forEach((effect) => {
-      secondaryEffects.add(effect.effect);
-    });
-  });
-
-  return Array.from(secondaryEffects);
-}
-
-function getStatMapFromCardMap(
-  deckCards: Map<string, CardWithEffects>
-): Map<string, Stat> {
-  const statMap = new Map<string, Stat>();
-
-  Array.from(deckCards.values()).forEach((card) => {
-    card.statEffects.forEach((stat) => {
-      if (statMap.has(stat.type.name)) {
-        statMap.get(stat.type.name)!.amount += stat.amount;
-      } else {
-        statMap.set(stat.type.name, {
-          name: stat.type.name,
-          amount: stat.amount,
-          percent: stat.percent,
-        });
-      }
-    });
-  });
-
-  return statMap;
 }
 
 function cardMapFromArray(
@@ -60,7 +24,7 @@ function cardMapFromArray(
   return result;
 }
 
-function tagMapFromArray(tagIds: string[]): Set<string> {
+function tagSetFromArray(tagIds: string[]): Set<string> {
   const result = new Set<string>();
 
   tagIds.forEach((tagId) => {
@@ -88,7 +52,7 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
     deck ? cardMapFromArray(deck.cards) : new Map<string, CardWithEffects>()
   );
   const [deckTags, setDeckTags] = useState<Set<string>>(
-    deck ? tagMapFromArray(deck.tags.map((tag) => tag.id)) : new Set<string>()
+    deck ? tagSetFromArray(deck.tags.map((tag) => tag.id)) : new Set<string>()
   );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -101,8 +65,8 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
             id: deck.id,
             name: deckName,
             description: deckDescription,
-            cards: Array.from(deckCards.keys()),
-            tags: Array.from(deckTags.values()),
+            cards: [...deckCards.keys()],
+            tags: [...deckTags.values()],
           });
 
           router.push(`/decks/${deck.id}`);
@@ -115,8 +79,8 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
             name: deckName,
             description: deckDescription,
             creator: session.user.id,
-            cards: Array.from(deckCards.keys()),
-            tags: Array.from(deckTags.values()),
+            cards: [...deckCards.keys()],
+            tags: [...deckTags.values()],
           });
 
           router.push("/decks");
@@ -190,9 +154,9 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
         </div>
       )}
 
-      {Array.from(deckCards.values()).length > 0 && (
+      {[...deckCards.values()].length > 0 && (
         <CardList
-          cards={Array.from(deckCards.values())}
+          cards={[...deckCards.values()]}
           removeCard={removeCardFromDeck}
         />
       )}
