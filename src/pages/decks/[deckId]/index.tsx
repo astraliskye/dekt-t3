@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
 import CardList from "../../../components/card-list";
+import Voting from "../../../components/deck-voting";
 import { trpc } from "../../../utils/trpc";
 
 const ViewDeck: NextPage = () => {
@@ -22,6 +23,11 @@ const ViewDeck: NextPage = () => {
       <Link href={`/decks/${deck.id}/edit`}>
         <a>Edit Deck</a>
       </Link>
+      <Voting
+        userVote={deck.votes.at(0)}
+        deckId={deck.id}
+        voteCount={deck.voteCount}
+      />
       <h1 className="text-5xl text-center pt-16 pb-8">{deck.name}</h1>
       {deck.description && (
         <p className="text-center mb-3">{deck.description}</p>

@@ -20,10 +20,21 @@ model Deck {
     description String?
     cards Card[]
     tags Tag[]
+    voteCount Int @default(0)
+    votes Vote[]
     creator User @relation(fields: [creatorId], references: [id])
     creatorId String
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
+
+model Vote {
+    direction Int
+    deck Deck @relation(fields: [deckId], references: [id])
+    deckId String
+    voter User @relation(fields: [voterId], references: [id])
+    voterId String
+    @@id(fields: [deckId, voterId])
 }
 
 model Tag {
@@ -114,6 +125,7 @@ model User {
     accounts      Account[]
     sessions      Session[]
     decks Deck[]
+    votes Vote[]
 }
 
 model VerificationToken {

@@ -1,6 +1,6 @@
 import { createRouter } from "./context";
-import { string, z } from "zod";
-import CardList from "../../components/card-list";
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 
 export const deckRouter = createRouter()
   .query("all", {
@@ -8,6 +8,11 @@ export const deckRouter = createRouter()
       return await ctx.prisma.deck.findMany({
         include: {
           tags: true,
+          votes: ctx.session?.user && {
+            where: {
+              voterId: ctx.session.user.id,
+            },
+          },
           creator: {
             select: {
               name: true,
@@ -30,6 +35,11 @@ export const deckRouter = createRouter()
             },
           },
           tags: true,
+          votes: ctx.session?.user && {
+            where: {
+              voterId: ctx.session.user.id,
+            },
+          },
           creator: {
             select: {
               name: true,
@@ -45,44 +55,47 @@ export const deckRouter = createRouter()
       description: z.string().optional(),
       cards: z.string().array().optional(),
       tags: z.string().array().optional(),
-      creator: z.string(),
     }),
     async resolve({ ctx, input }) {
-      return await ctx.prisma.deck.create({
-        data: {
-          name: input.name,
-          description: input.description,
-          creator: {
-            connect: {
-              id: input.creator,
+      if (ctx.session?.user) {
+        return await ctx.prisma.deck.create({
+          data: {
+            name: input.name,
+            description: input.description,
+            creator: {
+              connect: {
+                id: ctx.session.user.id,
+              },
+            },
+            cards: {
+              connect: input.cards?.map((cardId) => ({
+                id: cardId,
+              })),
+            },
+            tags: {
+              connect: input.tags?.map((tagId) => ({
+                id: tagId,
+              })),
             },
           },
-          cards: {
-            connect: input.cards?.map((cardId) => ({
-              id: cardId,
-            })),
-          },
-          tags: {
-            connect: input.tags?.map((tagId) => ({
-              id: tagId,
-            })),
-          },
-        },
-        include: {
-          cards: {
-            include: {
-              statEffects: { include: { type: true } },
-              secondaryEffects: true,
+          include: {
+            cards: {
+              include: {
+                statEffects: { include: { type: true } },
+                secondaryEffects: true,
+              },
+            },
+            tags: true,
+            creator: {
+              select: {
+                name: true,
+              },
             },
           },
-          tags: true,
-          creator: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      });
+        });
+      }
+
+      return null;
     },
   })
   .mutation("update", {
@@ -94,34 +107,268 @@ export const deckRouter = createRouter()
       tags: z.string().array().optional(),
     }),
     async resolve({ ctx, input }) {
-      return ctx.prisma.deck.update({
-        where: { id: input.id },
-        data: {
-          name: input.name,
-          description: input.description,
-          cards: input.cards && {
-            set: [],
-            connect: input.cards.map((cardId) => ({ id: cardId })),
-          },
-          tags: input.tags && {
-            set: [],
-            connect: input.tags?.map((tagId) => ({ id: tagId })),
-          },
-        },
-        include: {
-          cards: {
-            include: {
-              statEffects: { include: { type: true } },
-              secondaryEffects: true,
+      if (ctx.session?.user) {
+        return ctx.prisma.deck.update({
+          where: { id: input.id },
+          data: {
+            name: input.name,
+            description: input.description,
+            cards: input.cards && {
+              set: [],
+              connect: input.cards.map((cardId) => ({ id: cardId })),
+            },
+            tags: input.tags && {
+              set: [],
+              connect: input.tags?.map((tagId) => ({ id: tagId })),
             },
           },
-          tags: true,
-          creator: {
-            select: {
-              name: true,
+          include: {
+            cards: {
+              include: {
+                statEffects: { include: { type: true } },
+                secondaryEffects: true,
+              },
             },
+            tags: true,
+            votes: {
+              where: {
+                voterId: ctx.session.user.id,
+              },
+            },
+            creator: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        });
+      }
+
+      return null;
+    },
+  })
+  .mutation("upvote", {
+    input: z.object({
+      deckId: z.string(),
+    }),
+    async resolve({ ctx, input }) {
+      if (ctx.session?.user === undefined) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "No valid user session exists",
+        });
+      }
+
+      const vote = await ctx.prisma.vote.findUnique({
+        where: {
+          deckId_voterId: {
+            voterId: ctx.session.user.id,
+            deckId: input.deckId,
           },
         },
       });
+
+      if (vote === null) {
+        // user has not voted
+        await ctx.prisma.vote.create({
+          data: {
+            direction: 1,
+            voterId: ctx.session.user.id,
+            deckId: input.deckId,
+          },
+        });
+
+        await ctx.prisma.deck.update({
+          data: {
+            voteCount: { increment: 1 },
+          },
+          where: {
+            id: input.deckId,
+          },
+        });
+
+        return 1;
+      } else if (vote.direction > 0) {
+        // user has upvoted already
+        return 0;
+      } else if (vote.direction < 0) {
+        // user has downvoted previously
+        await ctx.prisma.vote.update({
+          data: {
+            direction: 1,
+          },
+          where: {
+            deckId_voterId: {
+              voterId: ctx.session.user.id,
+              deckId: input.deckId,
+            },
+          },
+        });
+
+        await ctx.prisma.deck.update({
+          data: {
+            voteCount: { increment: 2 },
+          },
+          where: {
+            id: input.deckId,
+          },
+        });
+
+        return 2;
+      } else {
+        // user has voted neutral previously
+        await ctx.prisma.vote.update({
+          data: {
+            direction: 1,
+          },
+          where: {
+            deckId_voterId: {
+              voterId: ctx.session.user.id,
+              deckId: input.deckId,
+            },
+          },
+        });
+
+        await ctx.prisma.deck.update({
+          data: {
+            voteCount: { increment: 1 },
+          },
+          where: {
+            id: input.deckId,
+          },
+        });
+
+        return 1;
+      }
+    },
+  })
+  .mutation("downvote", {
+    input: z.object({
+      deckId: z.string(),
+    }),
+    async resolve({ ctx, input }) {
+      if (ctx.session?.user === undefined) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "No valid user session exists",
+        });
+      }
+
+      const vote = await ctx.prisma.vote.findUnique({
+        where: {
+          deckId_voterId: {
+            voterId: ctx.session.user.id,
+            deckId: input.deckId,
+          },
+        },
+      });
+
+      if (vote === null) {
+        // user has not voted
+        await ctx.prisma.vote.create({
+          data: {
+            direction: -1,
+            voterId: ctx.session.user.id,
+            deckId: input.deckId,
+          },
+        });
+
+        await ctx.prisma.deck.update({
+          data: {
+            voteCount: { decrement: 1 },
+          },
+          where: {
+            id: input.deckId,
+          },
+        });
+
+        return -1;
+      } else if (vote.direction < 0) {
+        // user has downvoted already
+        return 0;
+      } else if (vote.direction > 0) {
+        // user has upvoted previously
+        await ctx.prisma.vote.update({
+          data: {
+            direction: -1,
+          },
+          where: {
+            deckId_voterId: {
+              voterId: ctx.session.user.id,
+              deckId: input.deckId,
+            },
+          },
+        });
+
+        await ctx.prisma.deck.update({
+          data: {
+            voteCount: { decrement: 2 },
+          },
+          where: {
+            id: input.deckId,
+          },
+        });
+
+        return -2;
+      } else {
+        // user has voted neutral previously
+        await ctx.prisma.vote.update({
+          data: {
+            direction: -1,
+          },
+          where: {
+            deckId_voterId: {
+              voterId: ctx.session.user.id,
+              deckId: input.deckId,
+            },
+          },
+        });
+
+        await ctx.prisma.deck.update({
+          data: {
+            voteCount: { increment: -1 },
+          },
+          where: {
+            id: input.deckId,
+          },
+        });
+
+        return 1;
+      }
+    },
+  })
+  .mutation("unvote", {
+    input: z.object({
+      deckId: z.string(),
+    }),
+    async resolve({ ctx, input }) {
+      if (ctx.session?.user === undefined) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "No valid user session exists",
+        });
+      }
+
+      const vote = await ctx.prisma.vote.delete({
+        where: {
+          deckId_voterId: {
+            voterId: ctx.session.user.id,
+            deckId: input.deckId,
+          },
+        },
+      });
+
+      if (vote.direction !== 0) {
+        await ctx.prisma.deck.update({
+          data: {
+            voteCount: {
+              increment: vote.direction > 0 ? -1 : 1,
+            },
+          },
+          where: {
+            id: input.deckId,
+          },
+        });
+      }
     },
   });

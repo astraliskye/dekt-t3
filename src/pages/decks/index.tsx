@@ -1,6 +1,7 @@
 import { NextPage } from "next";
 import Link from "next/link";
 import React, { useEffect } from "react";
+import Voting from "../../components/deck-voting";
 import { trpc } from "../../utils/trpc";
 
 const Decks: NextPage = () => {
@@ -22,9 +23,16 @@ const Decks: NextPage = () => {
                 new Date(a.createdAt).getTime()
             )
             .map((deck) => (
-              <Link href={`/decks/${deck.id}`} key={deck.id}>
-                <div className="bg-neutral-900 rounded-lg p-8 my-4 cursor-pointer">
-                  <h2 className="text-2xl mb-4">{deck.name}</h2>
+              <div
+                key={deck.id}
+                className="bg-neutral-900 rounded-lg p-8 my-4 flex justify-between"
+              >
+                <div>
+                  <Link href={`/decks/${deck.id}`} key={deck.id}>
+                    <h2 className="text-2xl mb-4 cursor-pointer">
+                      {deck.name}
+                    </h2>
+                  </Link>
                   <p>{deck.description || "No description"}</p>
                   <p className="text-neutral-400 text-xs">
                     Created by {deck.creator.name}
@@ -42,7 +50,12 @@ const Decks: NextPage = () => {
                     </div>
                   )}
                 </div>
-              </Link>
+                <Voting
+                  deckId={deck.id}
+                  voteCount={deck.voteCount}
+                  userVote={deck.votes.at(0)}
+                />
+              </div>
             ))
         ) : (
           <p className="text-white text-center">

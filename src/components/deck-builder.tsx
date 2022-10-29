@@ -78,7 +78,6 @@ const DeckBuilder = ({ deck }: DeckBuilderProps) => {
           await createDeckMutation.mutateAsync({
             name: deckName,
             description: deckDescription,
-            creator: session.user.id,
             cards: [...deckCards.keys()],
             tags: [...deckTags.values()],
           });
