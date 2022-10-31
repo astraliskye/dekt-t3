@@ -1,15 +1,11 @@
 import { NextPage } from "next";
 import Link from "next/link";
-import React, { useEffect } from "react";
+import React from "react";
 import DeckVoting from "../../components/deck-voting";
 import { trpc } from "../../utils/trpc";
 
 const Decks: NextPage = () => {
   const decks = trpc.useQuery(["deck.all"]);
-
-  useEffect(() => {
-    console.log("decks:", decks);
-  }, [decks]);
 
   return (
     <>
