@@ -129,44 +129,65 @@ export const deckRouter = createRouter()
       tags: z.string().array().optional(),
     }),
     async resolve({ ctx, input }) {
-      if (ctx.session?.user) {
-        return ctx.prisma.deck.update({
-          where: { id: input.id },
-          data: {
-            name: input.name,
-            description: input.description,
-            cards: input.cards && {
-              set: [],
-              connect: input.cards.map((cardId) => ({ id: cardId })),
-            },
-            tags: input.tags && {
-              set: [],
-              connect: input.tags?.map((tagId) => ({ id: tagId })),
-            },
-          },
-          include: {
-            cards: {
-              include: {
-                statEffects: { include: { type: true } },
-                secondaryEffects: true,
-              },
-            },
-            tags: true,
-            votes: {
-              where: {
-                voterId: ctx.session.user.id,
-              },
-            },
-            creator: {
-              select: {
-                name: true,
-              },
-            },
-          },
+      if (ctx.session?.user === undefined) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "No valid user session exists",
         });
       }
 
-      return null;
+      const deck = await ctx.prisma.deck.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!deck) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deck does not exist",
+        });
+      }
+
+      if (ctx.session.user.id !== deck?.creatorId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Deck does not belong to you",
+        });
+      }
+
+      return ctx.prisma.deck.update({
+        where: { id: input.id },
+        data: {
+          name: input.name,
+          description: input.description,
+          cards: input.cards && {
+            set: [],
+            connect: input.cards.map((cardId) => ({ id: cardId })),
+          },
+          tags: input.tags && {
+            set: [],
+            connect: input.tags?.map((tagId) => ({ id: tagId })),
+          },
+        },
+        include: {
+          cards: {
+            include: {
+              statEffects: { include: { type: true } },
+              secondaryEffects: true,
+            },
+          },
+          tags: true,
+          votes: {
+            where: {
+              voterId: ctx.session.user.id,
+            },
+          },
+          creator: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
     },
   })
   .mutation("upvote", {
