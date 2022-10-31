@@ -1,7 +1,7 @@
 import { NextPage } from "next";
 import Link from "next/link";
 import React, { useEffect } from "react";
-import Voting from "../../components/deck-voting";
+import DeckVoting from "../../components/deck-voting";
 import { trpc } from "../../utils/trpc";
 
 const Decks: NextPage = () => {
@@ -50,11 +50,7 @@ const Decks: NextPage = () => {
                     </div>
                   )}
                 </div>
-                <Voting
-                  deckId={deck.id}
-                  voteCount={deck.voteCount}
-                  userVote={deck.votes.at(0)}
-                />
+                <DeckVoting deck={deck} />
               </div>
             ))
         ) : (

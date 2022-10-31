@@ -25,6 +25,8 @@ const deckWithCards = Prisma.validator<Prisma.DeckArgs>()({
 
 export type DeckWithCards = Prisma.DeckGetPayload<typeof deckWithCards>;
 
+export type Deck = Prisma.DeckGetPayload;
+
 export interface Stat {
   name: string;
   amount: number;

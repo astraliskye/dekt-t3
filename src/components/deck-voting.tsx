@@ -1,24 +1,26 @@
-import { Vote } from "@prisma/client";
 import { signIn, useSession } from "next-auth/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Deck } from "../types/client";
 import { trpc } from "../utils/trpc";
 
 interface DeckVotingProps {
-  deckId: string;
-  userVote?: Vote;
-  voteCount: number;
+  deck: Deck;
 }
 
-const DeckVoting = ({ deckId, userVote, voteCount }: DeckVotingProps) => {
-  const session = useSession();
+const DeckVoting = ({ deck }: DeckVotingProps) => {
+  const { data: session } = useSession();
+  const { data: vote } = trpc.useQuery(["deck.userVote", { deckId: deck.id }]);
 
-  const [upvote, setUpvote] = useState(
-    (userVote && userVote.direction > 0) || false
-  );
+  const [upvote, setUpvote] = useState((vote && vote.direction > 0) || false);
   const [downvote, setDownvote] = useState(
-    (userVote && userVote.direction < 0) || false
+    (vote && vote.direction < 0) || false
   );
-  const [votes, setVotes] = useState(voteCount);
+  const [voteCount, setVoteCount] = useState(deck.voteCount);
+
+  useEffect(() => {
+    setUpvote((vote && vote.direction > 0) || false);
+    setDownvote((vote && vote.direction < 0) || false);
+  }, [vote]);
 
   const upvoteMutation = trpc.useMutation(["deck.upvote"]);
   const downvoteMutation = trpc.useMutation(["deck.downvote"]);
@@ -30,22 +32,28 @@ const DeckVoting = ({ deckId, userVote, voteCount }: DeckVotingProps) => {
         onClick={async (e) => {
           e.stopPropagation();
 
-          if (session.data && session.data.user) {
+          if (session && session.user) {
             if (upvote) {
               await unvoteMutation.mutateAsync({
-                deckId: deckId,
+                deckId: deck.id,
               });
               setUpvote(false);
-              setVotes(votes - 1);
+              setVoteCount(voteCount - 1);
             } else {
               const voteDirection = await upvoteMutation.mutateAsync({
-                deckId: deckId,
+                deckId: deck.id,
               });
 
               if (voteDirection > 0) {
                 setDownvote(false);
                 setUpvote(true);
-                setVotes(votes + voteDirection);
+                setVoteCount(voteCount + voteDirection);
+              } else {
+                await unvoteMutation.mutateAsync({
+                  deckId: deck.id,
+                });
+                setUpvote(false);
+                setVoteCount(voteCount - 1);
               }
             }
           } else {
@@ -60,27 +68,33 @@ const DeckVoting = ({ deckId, userVote, voteCount }: DeckVotingProps) => {
       >
         &#8593;
       </button>
-      <span className="pb-4">{votes}</span>
+      <span className="pb-4">{voteCount}</span>
       <button
         onClick={async (e) => {
           e.stopPropagation();
 
-          if (session.data && session.data.user) {
+          if (session && session.user) {
             if (downvote) {
               await unvoteMutation.mutateAsync({
-                deckId,
+                deckId: deck.id,
               });
               setDownvote(false);
-              setVotes(votes + 1);
+              setVoteCount(voteCount + 1);
             } else {
               const voteDirection = await downvoteMutation.mutateAsync({
-                deckId,
+                deckId: deck.id,
               });
 
               if (voteDirection < 0) {
                 setUpvote(false);
                 setDownvote(true);
-                setVotes(votes + voteDirection);
+                setVoteCount(voteCount + voteDirection);
+              } else {
+                await unvoteMutation.mutateAsync({
+                  deckId: deck.id,
+                });
+                setDownvote(false);
+                setVoteCount(voteCount + 1);
               }
             }
           } else {

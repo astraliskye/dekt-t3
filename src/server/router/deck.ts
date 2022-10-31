@@ -49,6 +49,28 @@ export const deckRouter = createRouter()
       });
     },
   })
+  .query("userVote", {
+    input: z.object({
+      deckId: z.string(),
+    }),
+    async resolve({ ctx, input }) {
+      if (ctx.session?.user === undefined) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "No valid user session exists",
+        });
+      }
+
+      return await ctx.prisma.vote.findUnique({
+        where: {
+          deckId_voterId: {
+            voterId: ctx.session.user.id,
+            deckId: input.deckId,
+          },
+        },
+      });
+    },
+  })
   .mutation("create", {
     input: z.object({
       name: z.string().min(1),
