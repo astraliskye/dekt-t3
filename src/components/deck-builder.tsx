@@ -1,7 +1,7 @@
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
-import { CardWithEffects, DeckWithCards } from "../types/client";
+import { CardWithEffects, DeckWithCards, DeckWithTags } from "../types/client";
 import { trpc } from "../utils/trpc";
 import Button from "./button";
 import CardCollection from "./card-collection";
@@ -9,7 +9,7 @@ import CardList from "./card-list";
 import TextInput from "./text-input";
 
 interface DeckBuilderProps {
-  deck?: DeckWithCards;
+  deck?: DeckWithCards & DeckWithTags;
 }
 
 function cardMapFromArray(
