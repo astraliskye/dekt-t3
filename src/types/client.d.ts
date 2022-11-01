@@ -14,7 +14,6 @@ const deckWithCards = Prisma.validator<Prisma.DeckArgs>()({
         secondaryEffects: true,
       },
     },
-    tags: true,
     creator: {
       select: {
         name: true,
@@ -25,7 +24,18 @@ const deckWithCards = Prisma.validator<Prisma.DeckArgs>()({
 
 export type DeckWithCards = Prisma.DeckGetPayload<typeof deckWithCards>;
 
-export type Deck = Prisma.DeckGetPayload;
+const deckWithTags = Prisma.validator<Prisma.DeckArgs>()({
+  include: {
+    tags: true,
+    creator: {
+      select: {
+        name: true,
+      },
+    },
+  },
+});
+
+export type DeckWithTags = Prisma.DeckGetPayload<typeof deckWithTags>;
 
 export interface Stat {
   name: string;

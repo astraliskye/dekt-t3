@@ -1,6 +1,6 @@
+import { Deck } from "@prisma/client";
 import { signIn, useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
-import { Deck } from "../types/client";
 import { trpc } from "../utils/trpc";
 
 interface DeckVotingProps {
@@ -27,7 +27,7 @@ const DeckVoting = ({ deck }: DeckVotingProps) => {
   const unvoteMutation = trpc.useMutation(["deck.unvote"]);
 
   return (
-    <div className="flex flex-col flex-shrink w-32 items-center">
+    <div className="flex flex-col flex-shrink items-center">
       <button
         onClick={async (e) => {
           e.stopPropagation();

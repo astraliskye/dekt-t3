@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
 import CardList from "../../../components/card-list";
-import DeckVoting from "../../../components/deck-voting";
+import DeckSummary from "../../../components/deck-summary";
 import { trpc } from "../../../utils/trpc";
 
 const ViewDeck: NextPage = () => {
@@ -28,30 +28,7 @@ const ViewDeck: NextPage = () => {
         </Link>
       )}
 
-      <DeckVoting deck={deck} />
-      <h1 className="text-5xl text-center pt-16 pb-8">{deck.name}</h1>
-      {deck.description && (
-        <p className="text-center mb-3">{deck.description}</p>
-      )}
-
-      <p className="text-neutral-500 text-sm text-center">
-        {`Created by ${
-          deck.creator.name
-        } at ${deck.createdAt.toLocaleString()}`}
-      </p>
-
-      {deck.tags && (
-        <div className="flex items-center justify-center py-4 mb-8">
-          {deck.tags.map((tag) => (
-            <span
-              key={tag.id}
-              className="bg-red-700 text-white rounded-md px-2 py-1 text-sm mr-2 font-bold select-none"
-            >
-              {tag.name}
-            </span>
-          ))}
-        </div>
-      )}
+      <DeckSummary deck={deck} />
 
       {deck.cards && <CardList cards={deck.cards} />}
     </>
