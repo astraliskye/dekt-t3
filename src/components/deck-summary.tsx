@@ -11,7 +11,7 @@ interface DeckSummaryProps {
 
 const DeckSummary = ({ deck, link }: DeckSummaryProps) => {
   return (
-    <div className="flex justify-between items-center max-w-4xl mx-auto bg-neutral-900 rounded-lg px-8 py-6">
+    <div className="flex justify-between items-center max-w-4xl mx-auto bg-neutral-900 rounded-lg px-8 py-6 mb-4">
       <div>
         {link ? (
           <Link href={`/decks/${deck.id}`}>
@@ -26,9 +26,7 @@ const DeckSummary = ({ deck, link }: DeckSummaryProps) => {
         </p>
         <div className="flex flex-wrap">
           {deck.tags.map((tag) => (
-            <span key={tag.id} className="px-2 py-2">
-              <Tag name={tag.name} />
-            </span>
+            <Tag key={tag.id} name={tag.name} />
           ))}
         </div>
       </div>

@@ -17,11 +17,7 @@ const Decks: NextPage = () => {
                 new Date(b.createdAt).getTime() -
                 new Date(a.createdAt).getTime()
             )
-            .map((deck) => (
-              <div key={deck.id} className="py-2 px-4">
-                <DeckSummary link deck={deck} />
-              </div>
-            ))
+            .map((deck) => <DeckSummary key={deck.id} link deck={deck} />)
         ) : (
           <p className="text-white text-center">
             There are no decks to display.
