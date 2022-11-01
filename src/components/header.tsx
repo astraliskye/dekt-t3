@@ -1,4 +1,5 @@
 import { useSession, signIn, signOut } from "next-auth/react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import Button from "./button";
@@ -14,11 +15,22 @@ const Header = () => {
         </Link>
 
         {session ? (
-          <div>
+          <div className="flex items-center">
             {session.user && (
-              <span className="pr-4">
-                Signed in as{" "}
-                <span className="font-bold">{session.user.name}</span>
+              <span className="flex border-2 border-white mr-3 rounded-full overflow-hidden">
+                {session.user.image ? (
+                  <Image
+                    src={session.user.image}
+                    width="35px"
+                    height="35px"
+                    alt="profile picture"
+                  />
+                ) : (
+                  <>
+                    Signed in as{" "}
+                    <span className="font-bold">{session.user.name}</span>
+                  </>
+                )}
               </span>
             )}
             <Button onClick={() => signOut()}>Sign Out</Button>

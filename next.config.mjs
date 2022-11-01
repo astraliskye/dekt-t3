@@ -21,6 +21,6 @@ export default defineNextConfig({
     defaultLocale: "en",
   },
   images: {
-    domains: ["github.com", "static.wikia.nocookie.net"],
+    domains: ["github.com", "static.wikia.nocookie.net", "cdn.discordapp.com"],
   },
 });
